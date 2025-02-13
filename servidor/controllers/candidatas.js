@@ -6,10 +6,55 @@ import fs from 'fs';
 
 
 export const getCandidatas = (req, res) => {
-    const sqlSelect = "SELECT candidata.*, foto_candidata.foto_url FROM candidata NATURAL JOIN foto_candidata;";
-    
-    db.query(sqlSelect, (err, data) => {
-        if (err) return res.status(500).json(err);
+    const sql = `
+        WITH CalificacionesBase AS (
+            SELECT 
+                c.CANDIDATA_ID,
+                SUM(cal.CALIFICACION_VALOR) as suma_base,
+                COUNT(DISTINCT cal.USUARIO_ID) as num_jueces
+            FROM candidata c
+            LEFT JOIN calificacion cal ON c.CANDIDATA_ID = cal.CANDIDATA_ID
+            WHERE cal.EVENTO_ID IN (1, 2, 3)
+            GROUP BY c.CANDIDATA_ID
+        ),
+        CalificacionesDesempate AS (
+            SELECT 
+                c.CANDIDATA_ID,
+                SUM(f.CALIFICACION_VALOR) as suma_desempate,
+                COUNT(DISTINCT f.USUARIO_ID) as num_jueces_desempate
+            FROM candidata c
+            LEFT JOIN finales f ON c.CANDIDATA_ID = f.CANDIDATA_ID
+            WHERE f.EVENTO_ID = 5
+            GROUP BY c.CANDIDATA_ID
+        )
+        SELECT 
+            c.CANDIDATA_ID,
+            c.CAND_NOMBRE1,
+            c.CAND_NOMBRE2,
+            c.CAND_APELLIDOPATERNO,
+            c.CAND_APELLIDOMATERNO,
+            c.ID_ELECCION,
+            COALESCE(
+                CASE 
+                    WHEN cd.suma_desempate IS NOT NULL 
+                    THEN (
+                        (cb.suma_base / NULLIF(cb.num_jueces, 0)) + 
+                        (cd.suma_desempate / NULLIF(cd.num_jueces_desempate, 0))
+                    ) / 2
+                    ELSE (cb.suma_base / NULLIF(cb.num_jueces, 0))
+                END, 0
+            ) as CAND_NOTA_FINAL
+        FROM candidata c
+        LEFT JOIN CalificacionesBase cb ON c.CANDIDATA_ID = cb.CANDIDATA_ID
+        LEFT JOIN CalificacionesDesempate cd ON c.CANDIDATA_ID = cd.CANDIDATA_ID
+        ORDER BY CAND_NOTA_FINAL DESC
+    `;
+
+    db.query(sql, (err, data) => {
+        if (err) {
+            console.error("Error obteniendo candidatas:", err);
+            return res.status(500).json(err);
+        }
         return res.status(200).json(data);
     });
 }
@@ -464,17 +509,28 @@ export const verificarEvento = async (req, res) => {
 // Nuevo endpoint para verificar estado global
 export const verificarEstadoGlobal = async (req, res) => {
   try {
-    // Verificar si todos los eventos anteriores están completos
-    const [votacionesCompletadas] = await db.query(`
-      SELECT EVENTO_ID, COUNT(DISTINCT USUARIO_ID) as jueces_votaron
-      FROM calificacion
-      WHERE EVENTO_ID IN (1, 2, 3)
-      GROUP BY EVENTO_ID
-    `);
+    // Convertir la consulta a Promise
+    const votacionesCompletadas = await new Promise((resolve, reject) => {
+      db.query(`
+        SELECT EVENTO_ID, COUNT(DISTINCT USUARIO_ID) as jueces_votaron
+        FROM calificacion
+        WHERE EVENTO_ID IN (1, 2, 3)
+        GROUP BY EVENTO_ID
+      `, (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
 
-    const [totalJueces] = await db.query(
-      'SELECT COUNT(*) as total FROM users WHERE rol = "juez" AND activo = 1'
-    );
+    const totalJueces = await new Promise((resolve, reject) => {
+      db.query(
+        'SELECT COUNT(*) as total FROM users WHERE rol = "juez" AND activo = 1',
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }
+      );
+    });
 
     const todosEventosCompletos = votacionesCompletadas.length === 3 && 
       votacionesCompletadas.every(v => v.jueces_votaron >= totalJueces[0].total);
@@ -649,4 +705,59 @@ export const verificarEmpate = async (req, res) => {
     console.error("Error en verificarEmpate:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
+};
+
+export const getCarruselCandidatas = (req, res) => {
+    const sql = `
+        WITH CalificacionesBase AS (
+            SELECT 
+                c.CANDIDATA_ID,
+                SUM(cal.CALIFICACION_VALOR) as suma_base,
+                COUNT(DISTINCT cal.USUARIO_ID) as num_jueces
+            FROM candidata c
+            LEFT JOIN calificacion cal ON c.CANDIDATA_ID = cal.CANDIDATA_ID
+            WHERE cal.EVENTO_ID IN (1, 2, 3)
+            GROUP BY c.CANDIDATA_ID
+        ),
+        CalificacionesDesempate AS (
+            SELECT 
+                c.CANDIDATA_ID,
+                SUM(f.CALIFICACION_VALOR) as suma_desempate,
+                COUNT(DISTINCT f.USUARIO_ID) as num_jueces_desempate
+            FROM candidata c
+            LEFT JOIN finales f ON c.CANDIDATA_ID = f.CANDIDATA_ID
+            WHERE f.EVENTO_ID = 5
+            GROUP BY c.CANDIDATA_ID
+        )
+        SELECT 
+            c.CANDIDATA_ID,
+            c.CAND_NOMBRE1,
+            c.CAND_APELLIDOPATERNO,
+            d.DEPARTAMENTO_SEDE,
+            d.DEPARTMENTO_NOMBRE,
+            COALESCE(
+                CASE 
+                    WHEN cd.suma_desempate IS NOT NULL 
+                    THEN (
+                        (cb.suma_base / NULLIF(cb.num_jueces, 0)) + 
+                        (cd.suma_desempate / NULLIF(cd.num_jueces_desempate, 0))
+                    ) / 2
+                    ELSE (cb.suma_base / NULLIF(cb.num_jueces, 0))
+                END, 0
+            ) as CAND_NOTA_FINAL
+        FROM candidata c
+        INNER JOIN carrera car ON c.CARRERA_ID = car.CARRERA_ID
+        INNER JOIN departamento d ON car.DEPARTAMENTO_ID = d.DEPARTAMENTO_ID
+        LEFT JOIN CalificacionesBase cb ON c.CANDIDATA_ID = cb.CANDIDATA_ID
+        LEFT JOIN CalificacionesDesempate cd ON c.CANDIDATA_ID = cd.CANDIDATA_ID
+        ORDER BY CAND_NOTA_FINAL DESC
+    `;
+
+    db.query(sql, (err, data) => {
+        if (err) {
+            console.error("Error obteniendo candidatas para carrusel:", err);
+            return res.status(500).json(err);
+        }
+        return res.status(200).json(data);
+    });
 };

@@ -274,27 +274,7 @@ const PanelAdmin = () => {
               </button>
             </div>
 
-            <div className="evento-item">
-              <h3>Evento Desempate</h3>
-              <div className="botones-evento">
-                <Button 
-                  variant="contained" 
-                  color="success"
-                  onClick={() => handleDesempate("si")}
-                  disabled={estadoDesempate === "si"}
-                >
-                  Empezar Desempate
-                </Button>
-                <Button 
-                  variant="contained" 
-                  color="error"
-                  onClick={() => handleDesempate("no")}
-                  disabled={estadoDesempate === "no"}
-                >
-                  Cerrar Desempate
-                </Button>
-              </div>
-            </div>
+
 
             {showDesempateError && (
               <div className="error-message">

@@ -35,24 +35,51 @@ function Preguntas() {
 
   const handleClick = async () => {
     try {
+      // Enviar calificaciones
       const calificaciones = elements.map((valor, index) => ({
-        EVENTO_ID: 3,  // 3 para Preguntas
+        EVENTO_ID: 3,
         USUARIO_ID: currentUser.id,
         CANDIDATA_ID: index + 1,
         CALIFICACION_NOMBRE: "Preguntas",
         CALIFICACION_PESO: 100,
-        CALIFICACION_VALOR: valor * 2  // Multiplicamos por 2 para que sea sobre 10
+        CALIFICACION_VALOR: valor * 2
       }));
 
+      // Enviar calificaciones una por una
       for (const calificacion of calificaciones) {
         if (calificacion.CALIFICACION_VALOR > 0) {
-          await Axios.post(`${API_BASE_URL}/cali`, calificacion, {
-            withCredentials: true
-          });
+          await Axios.post(`${API_BASE_URL}/cali`, calificacion);
         }
       }
+
+      // Verificar empate
+      const empateResponse = await Axios.get(`${API_BASE_URL}/user/verificar_empate`);
+      
       setPop(true);
-      console.log("Calificaciones enviadas");
+
+      if (empateResponse.data.empate) {
+        try {
+          // Activar evento de desempate
+          await Axios.put(`${API_BASE_URL}/events/5`, {
+            EVENTO_NOMBRE: 'Desempate',
+            EVENTO_PESO: 100,
+            EVENTO_ESTADO: 'si'
+          });
+
+          // Esperar un momento antes de redirigir
+          setTimeout(() => {
+            navigate('/Desempate');
+          }, 2000);
+        } catch (error) {
+          console.error("Error activando evento de desempate:", error);
+        }
+      } else {
+        // Si no hay empate, esperar 2 segundos y redirigir al panel
+        setTimeout(() => {
+          navigate('/PanelAdmin');
+        }, 2000);
+      }
+
     } catch (err) {
       console.error("Error al enviar calificaciones:", err);
     }
@@ -82,67 +109,34 @@ function Preguntas() {
     });
   };
 
-  const verificarVotacionCompleta = async () => {
-    try {
-      const response = await Axios.get(
-        `${API_BASE_URL}/candidatas/verificar-evento/3?userId=${currentUser.id}`
-      );
-      
-      console.log('Respuesta verificación:', response.data);
-      
-      const { completo, debeEsperar, hayEmpate } = response.data;
-
-      if (debeEsperar) {
-        setPop(true);
-        return false;
-      }
-
-      if (completo) {
-        await Axios.put(`${API_BASE_URL}/user/cambio/no/3`);
-        setPop(false);
-
-        if (hayEmpate) {
-          await Axios.put(`${API_BASE_URL}/user/cambio-desempate/si`);
-          navigate("/CRG_Desempate");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response1 = await Axios.get(`${API_BASE_URL}/user/ck3?id=${12}`);
+        if (response1.data[0].total === 0) {
+          // Maneja el caso donde total es 0 si es necesario
         } else {
-          navigate("/Gracias");
-        }
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      console.error("Error verificando votación:", err);
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    let interval;
-    if (pop) {
-      interval = setInterval(verificarVotacionCompleta, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [pop]);
-
-  useEffect(() => {
-    let globalCheck;
-    if (!pop) { // Solo verificar cuando no está en espera
-      globalCheck = setInterval(async () => {
-        try {
-          const estadoGlobal = await Axios.get(`${API_BASE_URL}/candidatas/estado-global`);
-          if (estadoGlobal.data.estado === 'empate') {
+          const response2 = await Axios.get(`${API_BASE_URL}/user/verificar_empate`);
+          if (response2.data.empate) {
             navigate("/Desempate");
+          } else {
+            navigate("/Gracias");
           }
-        } catch (err) {
-          console.error("Error verificando estado global:", err);
         }
-      }, 5000);
-    }
-    return () => {
-      if (globalCheck) clearInterval(globalCheck);
+      } catch (error) {
+        console.error(error);
+      }
     };
-  }, [pop]);
+  
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000);
+  
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+  
 
   const [listaCandidatas, setListaCandidatas] = useState([]);
 

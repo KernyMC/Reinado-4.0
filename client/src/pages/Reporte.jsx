@@ -169,35 +169,23 @@ function Reporte() {
                       {listaReinas
                         .sort((a, b) => b.CAND_NOTA_FINAL - a.CAND_NOTA_FINAL)
                         .map((reina, index) => (
-                          <View
-                            style={styles.contenedorColumna}
-                            key={reina.CANDIDATA_ID}
-                          >
+                          <View style={styles.contenedorColumna} key={reina.CANDIDATA_ID}>
                             <View style={styles.columna}>
-                              {index === 0 && (
-                                <Text style={styles.bold}>Reina ESPE 2024</Text>
-                              )}
-                              {index === 1 && (
-                                <Text style={styles.bold}>Srta. Confraternidad</Text>
-                              )}
-                              {index === 2 && (
-                                <Text style={styles.bold}>Srta. Simpatía</Text>
-                              )}
-                              {reina.ID_ELECCION === 1 && (
-                                <Text style={styles.bold}>Candidata Amistad</Text>
-                              )}
+                              {index === 0 && <Text style={styles.bold}>Reina ESPE 2024</Text>}
+                              {index === 1 && <Text style={styles.bold}>Srta. Confraternidad</Text>}
+                              {index === 2 && <Text style={styles.bold}>Srta. Simpatía</Text>}
+                              {reina.ID_ELECCION === 1 && <Text style={styles.bold}>Candidata Amistad</Text>}
                               <Text style={styles.text}>
                                 Lugar {index + 1}: {reina.CAND_NOMBRE1} {reina.CAND_APELLIDOPATERNO}
                               </Text>
-                              <Text style={styles.text}>
-                                Puntuación Final:
-                              </Text>
-                              <Text style={styles.text}>
-                                {reina.CAND_NOTA_FINAL}/150
-                              </Text>
+                              <Text style={styles.text}>Puntuación Final: </Text>
+                              <Text style={styles.text}>{reina.CAND_NOTA_FINAL}/150</Text>
                             </View>
                             <View style={styles.columna}>
-                              {/* Si deseas mostrar foto extra, ajusta aquí */}
+                              <Image
+                                style={styles.imageFoto}
+                                src={`/reinas/${reina.CAND_NOMBRE1.charAt(0)}${reina.CAND_NOMBRE2.charAt(0)}${reina.CAND_APELLIDOPATERNO.charAt(0)}${reina.CAND_APELLIDOMATERNO.charAt(0)}H.jpg`}
+                              />
                             </View>
                           </View>
                         ))}
@@ -252,35 +240,29 @@ function Reporte() {
                         .sort((a, b) => b.CAND_NOTA_FINAL - a.CAND_NOTA_FINAL)
                         .slice(0, 3)
                         .map((reina, index) => (
-                          <View
-                            style={styles.section_ganadoras}
-                            key={reina.CANDIDATA_ID}
-                            break={index > 1 ? "page" : undefined}
+                          <View 
+                            style={styles.section_ganadoras} 
+                            key={reina.CANDIDATA_ID} 
+                            break={index > 1 ? 'page' : undefined}
                           >
                             <View>
-                              {index === 0 && (
-                                <Text style={styles.title}>Reina ESPE 2024</Text>
-                              )}
-                              {index === 1 && (
-                                <Text style={styles.title}>
-                                  Srta. Confraternidad
-                                </Text>
-                              )}
-                              {index === 2 && (
-                                <Text style={styles.title}>Srta. Simpatía</Text>
-                              )}
-                              {reina.ID_ELECCION === 1 && (
-                                <Text style={styles.bold}>Candidata Amistad</Text>
-                              )}
+                              {index === 0 && <Text style={styles.title}>Reina ESPE 2024</Text>}
+                              {index === 1 && <Text style={styles.title}>Srta. Confraternidad</Text>}
+                              {index === 2 && <Text style={styles.title}>Srta. Simpatía</Text>}
+                              {reina.ID_ELECCION === 1 && <Text style={styles.bold}>Candidata Amistad</Text>}
                               <Text style={styles.title}>
                                 {reina.CAND_NOMBRE1} {reina.CAND_APELLIDOPATERNO}
                               </Text>
-                              <Text style={styles.subtitle}>
-                                {reina.DEPARTMENTO_NOMBRE}
-                              </Text>
+                              <Text style={styles.subtitle}>{reina.DEPARTMENTO_NOMBRE}</Text>
                               <Text style={styles.tituloreina}>
                                 Puntuación Final de: {reina.CAND_NOTA_FINAL}/150
                               </Text>
+                            </View>
+                            <View style={styles.section_ganadoras}>
+                              <Image
+                                style={styles.imageGanadoras}
+                                src={`/reinas/${reina.CAND_NOMBRE1.charAt(0)}${reina.CAND_NOMBRE2.charAt(0)}${reina.CAND_APELLIDOPATERNO.charAt(0)}${reina.CAND_APELLIDOMATERNO.charAt(0)}H.jpg`}
+                              />
                             </View>
                           </View>
                         ))}

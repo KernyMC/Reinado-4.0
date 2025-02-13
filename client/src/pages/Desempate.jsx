@@ -1,125 +1,145 @@
 import React, { useEffect, useState, useContext } from "react";
-import { AuthContext } from "../context/authContext";
-import { useLocation, useNavigate } from "react-router-dom";
 import Axios from 'axios';
+import { AuthContext } from "../context/authContext";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import Popup from "reactjs-popup";
-import "./popup.scss";
 import Espera from "../components/Espera.jsx";
 import { API_BASE_URL } from "./ip";
 import Navbar from "../components/Navbar";
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import "./popup.scss";
 
 function Desempate() {
-  const cat = useLocation().search;
   const { currentUser } = useContext(AuthContext);
   const [elements, setElements] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [vacioIsOpen, setVacioIsOpen] = useState(false);
   const [pop, setPop] = useState(false);
-  const [listaCandidatas, setListaCandidatas] = useState([]);
+  const [candidatasEmpatadas, setCandidatasEmpatadas] = useState([]);
+  const [candidatasDetalles, setCandidatasDetalles] = useState([]);
+  const [empateInfo, setEmpateInfo] = useState(null);
+  const [showEmpatePopup, setShowEmpatePopup] = useState(true);
+  const [tipoEmpate, setTipoEmpate] = useState('');
   const navigate = useNavigate();
-  const [esperando, setEsperando] = useState(false);
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await Axios.get(`${API_BASE_URL}/cali/verificar_empate`);
+        if (response.data.candidatasEmpatadas) {
+          setCandidatasEmpatadas(response.data.candidatasEmpatadas);
+          setElements(Array(response.data.candidatasEmpatadas.length).fill({ nota: 0, nota_final: 0 }));
+          
+          // Configurar información del empate
+          console.log("Datos de empate:", response.data);
+          
+          const tipo = response.data.candidatasEmpatadas[0].tipo;
+          setTipoEmpate(tipo);
+          
+          const mensaje = {
+            'primer-lugar': 'primer lugar',
+            'segundo-lugar': 'segundo lugar', 
+            'tercer-lugar': 'tercer lugar'
+          }[tipo];
+
+          setEmpateInfo({
+            candidatas: response.data.candidatasEmpatadas.map(c => 
+              `${c.CAND_NOMBRE1} ${c.CAND_APELLIDOPATERNO}`
+            ).join(', '),
+            tipo: mensaje
+          });
+        }
+      } catch (err) {
+        console.error("Error al obtener datos de empate:", err);
+        setVacioIsOpen(true);
+      }
+    };
+    fetchData();
+  }, []);
 
   const cortarParteDerecha = (cadena) => {
-    if (!cadena) return "";
+    if (typeof cadena !== 'string') {
+      console.error("La cadena no es válida");
+      return "";
+    }
+
     let parteDerecha = "";
     let i = cadena.length - 1;
+
     while (i >= 0 && cadena[i] !== "\\") {
       parteDerecha = cadena[i] + parteDerecha;
       i--;
     }
+
     return parteDerecha;
   };
 
-  // Cargar candidatas empatadas
-  useEffect(() => {
-    const cargarCandidatasEmpatadas = async () => {
-      try {
-        // Primero obtener las candidatas empatadas
-        const empateResponse = await Axios.get(`${API_BASE_URL}/candidatas/verificar-empate`);
-        console.log("Respuesta de empate:", empateResponse.data);
-        
-        if (empateResponse.data.hayEmpate) {
-          // Obtener los IDs de las candidatas empatadas
-          const candidatasIds = empateResponse.data.candidatasEmpatadas.map(c => c.CANDIDATA_ID);
-          
-          // Obtener los detalles completos de las candidatas
-          const detallesResponse = await Axios.get(`${API_BASE_URL}/candidatas/tt`);
-          const candidatasCompletas = detallesResponse.data.filter(
-            candidata => candidatasIds.includes(candidata.CANDIDATA_ID)
-          );
-
-          setListaCandidatas(candidatasCompletas);
-          setElements(Array(candidatasCompletas.length).fill(0));
-        }
-      } catch (err) {
-        console.error("Error cargando candidatas empatadas:", err);
-      }
-    };
-
-    cargarCandidatasEmpatadas();
-  }, []);
-
-  useEffect(() => {
-    const verificarEstadoDesempate = async () => {
-      try {
-        const response = await Axios.get(`${API_BASE_URL}/user/check-desempate`);
-        const estaActivo = response.data.EVENTO_ESTADO === "si";
-        
-        if (!estaActivo) {
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Error verificando estado de desempate:", error);
-      }
-    };
-
-    const interval = setInterval(verificarEstadoDesempate, 5000);
-    return () => clearInterval(interval);
-  }, [navigate]);
-
-  const handleClick = async () => {
-    try {
-      const calificaciones = elements.map((valor, index) => ({
-        EVENTO_ID: 5, // ID del evento de desempate
-        USUARIO_ID: currentUser.id,
-        CANDIDATA_ID: listaCandidatas[index].CANDIDATA_ID,
-        CALIFICACION_NOMBRE: "Desempate",
-        CALIFICACION_PESO: 100,
-        CALIFICACION_VALOR: valor * 2
-      }));
-
-      for (const calificacion of calificaciones) {
-        if (calificacion.CALIFICACION_VALOR > 0) {
-          await Axios.post(`${API_BASE_URL}/cali`, calificacion);
-        }
-      }
-
-      setEsperando(true);
-      await Axios.put(`${API_BASE_URL}/user/cambio/no/5`);
-      navigate("/Gracias");
-    } catch (err) {
-      console.error("Error al enviar calificaciones:", err);
-      setEsperando(false);
+const handleClick = async () => {
+  try {
+    if (!currentUser) {
+      throw new Error("No autenticado");
     }
-  };
+
+    // Verificar que todos los elementos tengan una nota válida
+    if (elements.some(element => !element.nota || element.nota === 0)) {
+      setVacioIsOpen(true);
+      return;
+    }
+
+    // Obtener el tipo de empate y las calificaciones
+    const calificaciones = elements.map((element, index) => ({
+      EVENTO_ID: 5,
+      USUARIO_ID: currentUser.id,
+      CANDIDATA_ID: candidatasEmpatadas[index].CANDIDATA_ID,
+      CALIFICACION_NOMBRE: "Desempate",
+      CALIFICACION_PESO: 100,
+      CALIFICACION_VALOR: parseFloat(element.nota) * 2, // Aseguramos que sea número
+      tipo_empate: tipoEmpate
+    }));
+
+    console.log("Enviando calificaciones:", calificaciones); // Para debug
+
+    const response = await Axios.post(`${API_BASE_URL}/cali/desempate_final`, {
+      calificaciones,
+      tipo_empate: tipoEmpate
+    });
+
+    if (response.data.message === "Desempate procesado exitosamente") {
+      setPop(true);
+      setTimeout(() => {
+        navigate('/Gracias');
+      }, 2000);
+    }
+
+  } catch (err) {
+    console.error("Error detallado:", err.response?.data || err.message);
+    alert("Error al procesar el desempate. Por favor, intente nuevamente.");
+  }
+};
 
   const Enviar = () => {
-    if (elements.includes(0)) {
+    if (elements.some(element => element.nota === 0)) {
       setVacioIsOpen(true);
     } else {
       setModalIsOpen(true);
     }
   };
 
-  const handleModalClose = () => setModalIsOpen(false);
-  const handleVacioClose = () => setVacioIsOpen(false);
+  const handleModalClose = () => {
+    setModalIsOpen(false);
+  };
+
+  const handleVacioClose = () => {
+    setVacioIsOpen(false);
+  };
 
   const setValue = (index, value) => {
     setElements((prevElements) => {
       const newElements = [...prevElements];
-      newElements[index] = value;
+      newElements[index] = { ...newElements[index], nota: value };
       return newElements;
     });
   };
@@ -151,100 +171,110 @@ function Desempate() {
     window.addEventListener('click', handleClickOutside);
   };
 
-  if (!currentUser || (currentUser.rol !== "juez" && currentUser.rol !== "admin")) {
-    return (
-      <div className="App">
-        <main>
-          <div>
-            <h1>Lo sentimos, no tienes permiso para ver esta página.</h1>
+  const EmpateModal = () => (
+    <Popup open={showEmpatePopup} onClose={() => setShowEmpatePopup(false)}>
+      <div className="modal">
+        <h2 className="modal-title">¡Atención! Empate Detectado</h2>
+        {empateInfo && (
+          <div className="modal-content">
+            <p>Se ha detectado un empate por el <b>{empateInfo.tipo}</b> entre las siguientes candidatas:</p>
+            <br></br>
+            <p className="candidatas-empatadas">{empateInfo.candidatas}</p>
+            <br></br>
+            <p>Por favor, proceda a calificar nuevamente a estas candidatas para resolver el empate.</p>
+            <br></br>
           </div>
-        </main>
+        )}
+        <div className="botones-modal">
+          <button onClick={() => setShowEmpatePopup(false)} className="btn-confirmar">
+            Entendido
+          </button>
+        </div>
       </div>
-    );
-  }
+    </Popup>
+  );
 
-  return (
-    <>
-      <Navbar texto="Desempate" />
-      {esperando ? (
-        <Espera />
-      ) : (
+  if (currentUser === null || (currentUser.rol !== "juez" && currentUser.rol !== "admin")) {
+    return (
+        <div className="App">
+          <main>
+            <div>
+              <h1>Lo sentimos, no tienes permiso para ver esta página.</h1>
+            </div>
+          </main>
+        </div>
+    );
+  } else {
+    return (
         <>
+          <Navbar texto="Desempate" />
+          {pop && <Espera />}
           <div className="main-container">
+            {empateInfo && (
+              <div className={`empate-banner ${tipoEmpate}`}>
+                <h2>Desempate por {empateInfo.tipo}</h2>
+                <p>Calificación para resolver el empate entre: {empateInfo.candidatas}</p>
+              </div>
+            )}
             <div className="reinas-container">
-              {listaCandidatas.map((candidata, index) => (
-                <div className="item-reina" key={candidata.CANDIDATA_ID}>
-                  <div className="espacio-imagen">
-                    <img
-                      alt="Foto candidata"
-                      className="foto-candidata"
-                      src={"/reinas/" + cortarParteDerecha(candidata.FOTO_URL)}
-                    />
-                    <div className="datos-candidata">
-                      <h3>
-                        {candidata.CAND_NOMBRE1} {candidata.CAND_APELLIDOPATERNO}
-                      </h3>
-                      <h4>{candidata.DEPARTMENTO_NOMBRE}</h4>
+              {candidatasEmpatadas.map((candidata, index) => (
+                  <div className="item-reina" key={candidata.CANDIDATA_ID}>
+                    <div className="espacio-imagen">
+                      <img
+                          alt="Foto candidata"
+                          className="foto-candidata"
+                          src={
+                            candidata.FOTO_URL
+                                ? "/reinas/" + cortarParteDerecha(candidata.FOTO_URL)
+                                : '/reinas/default.jpg'
+                          }
+                      />
+                      <div className="datos-candidata">
+                        <h3>{candidata.CAND_NOMBRE1} {candidata.CAND_APELLIDOPATERNO}</h3>
+                        <h4>{candidata.DEPARTMENTO_NOMBRE}</h4>                      </div>
                     </div>
-                  </div>
-                  <div className="dropdown" onClick={handleSelectClick}>
-                    <div className="botones-container">
-                      <div className="select">
-                        <span className="selected">
-                          {elements[index] !== 0 ? `${elements[index]} de 10` : 'Votar'}
-                        </span>
+                    <div className="dropdown" onClick={handleSelectClick}>
+                      <div className="botones-container">
+                        <div className="select">
+                      <span className="selected">
+                        {elements[index].nota !== 0 ? `${elements[index].nota} de 10` : 'Votar'}
+                      </span>
+                        </div>
+                        <ul className="menu" aria-label="Action event example">
+                          {Array.from({ length: 10 }, (_, i) => (
+                              <li
+                                  key={i + 1}
+                                  onClick={() => setValue(index, i + 1)}
+                                  className={elements[index].nota === i + 1 ? "active" : ""}
+                              >
+                                {i + 1}
+                              </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="menu" aria-label="Action event example">
-                        {Array.from({ length: 10 }, (_, i) => (
-                          <li
-                            key={i + 1}
-                            onClick={() => setValue(index, i + 1)}
-                            className={elements[index] === i + 1 ? "active" : ""}
-                          >
-                            {i + 1}
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   </div>
-                </div>
               ))}
             </div>
             <div id="enviarbarra" className="enviar">
               <Button type="button" className="btn-enviar" onClick={Enviar}>
                 ENVIAR
               </Button>
-
               <Popup open={modalIsOpen} onClose={handleModalClose}>
                 <div className="modal">
                   <h2 className="modal-title">¿Está seguro de registrar su voto?</h2>
                   <div className="botones-modal">
                     <Stack direction="row" spacing={4} justifyContent="center" alignItems="center">
-                      <Button 
-                        color="success" 
-                        variant="contained" 
-                        onClick={() => {
-                          handleModalClose();
-                          handleClick();
-                          setPop(true);
-                        }}
-                        className="btn-confirmar"
-                      >
+                      <Button color="success" variant="contained" onClick={() => { handleModalClose(); handleClick(); setPop(true); }} className="btn-confirmar">
                         Si
                       </Button>
-                      <Button 
-                        color="error" 
-                        variant="outlined" 
-                        onClick={handleModalClose} 
-                        className="btn-cancelar"
-                      >
+                      <Button color="error" variant="outlined" onClick={handleModalClose} className="btn-cancelar">
                         No
                       </Button>
                     </Stack>
                   </div>
                 </div>
               </Popup>
-
               <Popup open={vacioIsOpen} onClose={handleVacioClose}>
                 <div className="modal">
                   <h2 className="modal-title">Por favor, registre su voto por cada candidata.</h2>
@@ -256,11 +286,11 @@ function Desempate() {
                 </div>
               </Popup>
             </div>
+            <EmpateModal />
           </div>
         </>
-      )}
-    </>
-  );
+    );
+  }
 }
 
 export default Desempate;

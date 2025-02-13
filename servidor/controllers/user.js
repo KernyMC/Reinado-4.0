@@ -302,3 +302,101 @@ export const cerrarVotacionPublica = async (req, res) => {
         res.status(500).json({ error: "Error interno del servidor" });
     }
 };
+
+export const verificarEmpate = async (req, res) => {
+  try {
+    const sqlSelect = `
+      SELECT candidata_id, SUM(calificacion_valor) AS suma
+      FROM calificacion 
+      WHERE EVENTO_ID IN (1, 2, 3)
+      GROUP BY candidata_id
+      ORDER BY suma DESC;`;
+
+    db.query(sqlSelect, async (err, result) => {
+      if (err) {
+        console.error("Error en verificación:", err);
+        return res.status(500).json({ error: 'An error occurred' });
+      }
+
+      if (result.length < 2) {
+        return res.status(200).json({ empate: false });
+      }
+
+      // Agrupar candidatas por puntuación
+      const puntuacionesAgrupadas = result.reduce((acc, curr) => {
+        const puntuacion = curr.suma;
+        if (!acc[puntuacion]) {
+          acc[puntuacion] = [];
+        }
+        acc[puntuacion].push(curr.candidata_id);
+        return acc;
+      }, {});
+
+      // Ordenar puntuaciones de mayor a menor
+      const puntuacionesOrdenadas = Object.entries(puntuacionesAgrupadas)
+        .sort(([a], [b]) => parseFloat(b) - parseFloat(a));
+
+      let todosLosEmpates = [];
+
+      // Usar promesas para manejar las operaciones asíncronas
+      const promesas = [];
+
+      for (let i = 0; i < puntuacionesOrdenadas.length && i < 3; i++) {
+        const [puntuacion, candidatas] = puntuacionesOrdenadas[i];
+        
+        if (candidatas.length > 1) {
+          const tipoEmpate = i === 0 ? 'primer-lugar' : 
+                            i === 1 ? 'segundo-lugar' : 'tercer-lugar';
+
+          // Crear promesa para cada operación de limpieza e inserción
+          const promesa = new Promise((resolve, reject) => {
+            db.query("DELETE FROM desempate WHERE tipo = ?", [tipoEmpate], (err) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+
+              const values = candidatas.map(candidataId => [candidataId, puntuacion, tipoEmpate]);
+              const insertQuery = "INSERT INTO desempate (candidata_id, nota_final, tipo) VALUES ?";
+              
+              db.query(insertQuery, [values], (err) => {
+                if (err) {
+                  reject(err);
+                  return;
+                }
+                resolve();
+              });
+            });
+          });
+
+          promesas.push(promesa);
+          todosLosEmpates.push({
+            candidatas: candidatas,
+            tipo: tipoEmpate,
+            puntuacion: parseFloat(puntuacion)
+          });
+        }
+      }
+
+      try {
+        // Esperar a que todas las operaciones de BD se completen
+        await Promise.all(promesas);
+        
+        if (todosLosEmpates.length > 0) {
+          res.status(200).json({ 
+            empate: true, 
+            empates: todosLosEmpates
+          });
+        } else {
+          res.status(200).json({ empate: false });
+        }
+      } catch (error) {
+        console.error("Error en operaciones de BD:", error);
+        res.status(500).json({ error: 'Database operation failed' });
+      }
+    });
+  } catch (error) {
+    console.error("Error general:", error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+};

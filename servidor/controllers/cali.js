@@ -110,30 +110,32 @@ export const getDesempateNotas = (req, res) => {
 };
 
 export const getCandidatasEmpatadas = (req, res) => {
-    const sql = `
-        SELECT 
-            ca.CANDIDATA_ID,
-            ca.CAND_NOMBRE1, 
-            ca.CAND_APELLIDOPATERNO,
-            dpto.DEPARTAMENTO_SEDE,
-            dpto.DEPARTMENTO_NOMBRE, 
-            fc.FOTO_URL 
-        FROM 
-            desempate d
-            INNER JOIN candidata ca ON d.candidata_id = ca.CANDIDATA_ID
-            INNER JOIN carrera car ON ca.CARRERA_ID = car.CARRERA_ID
-            INNER JOIN departamento dpto ON car.DEPARTAMENTO_ID = dpto.DEPARTAMENTO_ID
-            INNER JOIN foto_candidata fc ON ca.CANDIDATA_ID = fc.CANDIDATA_ID AND fc.FOTO_DESCRIPCION = 'FX';
-    `;
-    db.query(sql, (err, result) => {
-        if (err) {
-            console.log(err);
-            res.status(500).json({ error: 'An error occurred' });
-        } else {
-            res.status(200).json({ candidatasEmpatadas: result });
-        }
-    });
+  const sql = `
+      SELECT 
+          ca.CANDIDATA_ID,
+          ca.CAND_NOMBRE1, 
+          ca.CAND_APELLIDOPATERNO,
+          dpto.DEPARTAMENTO_SEDE,
+          dpto.DEPARTMENTO_NOMBRE, 
+          fc.FOTO_URL,
+          d.tipo 
+      FROM 
+          desempate d
+          INNER JOIN candidata ca ON d.candidata_id = ca.CANDIDATA_ID
+          INNER JOIN carrera car ON ca.CARRERA_ID = car.CARRERA_ID
+          INNER JOIN departamento dpto ON car.DEPARTAMENTO_ID = dpto.DEPARTAMENTO_ID
+          INNER JOIN foto_candidata fc ON ca.CANDIDATA_ID = fc.CANDIDATA_ID AND fc.FOTO_DESCRIPCION = 'FX';
+  `;
+  db.query(sql, (err, result) => {
+      if (err) {
+          console.log(err);
+          res.status(500).json({ error: 'An error occurred' });
+      } else {
+          res.status(200).json({ candidatasEmpatadas: result });
+      }
+  });
 };
+
 
 export const checkVotacionPublica = async (req, res) => {
     try {
@@ -369,4 +371,157 @@ export const checkUserVoted = (req, res) => {
         }
         res.json({ hasVoted: rows[0].count > 0 });
   });
+};
+
+export const addFinalCalificacion = (req, res) => {
+  const { EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR } = req.body;
+
+  const sql = `
+    INSERT INTO finales (
+      EVENTO_ID, USUARIO_ID, CANDIDATA_ID, 
+      CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    EVENTO_ID, USUARIO_ID, CANDIDATA_ID,
+    CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR
+  ];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Error insertando calificación final:", err);
+      return res.status(500).json(err);
+    }
+    return res.status(200).json("Calificación final agregada exitosamente");
+  });
+};
+
+export const procesarDesempateFinal = async (req, res) => {
+  const { calificaciones, tipo_empate } = req.body;
+  
+  try {
+    console.log("Recibiendo calificaciones:", calificaciones); // Para debug
+
+    if (!calificaciones || !Array.isArray(calificaciones)) {
+      throw new Error("Calificaciones inválidas");
+    }
+
+    // Validar que todas las calificaciones tengan los campos necesarios
+    calificaciones.forEach(cal => {
+      if (!cal.CALIFICACION_VALOR || !cal.CANDIDATA_ID) {
+        throw new Error("Datos de calificación incompletos");
+      }
+    });
+
+    // Primero insertamos las calificaciones base
+    for (const cal of calificaciones) {
+      const insertQuery = `
+        INSERT INTO calificacion 
+        (EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR) 
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      
+      const values = [
+        cal.EVENTO_ID,
+        cal.USUARIO_ID,
+        cal.CANDIDATA_ID,
+        cal.CALIFICACION_NOMBRE,
+        cal.CALIFICACION_PESO,
+        cal.CALIFICACION_VALOR
+      ];
+
+      await new Promise((resolve, reject) => {
+        db.query(insertQuery, values, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+    }
+
+    // Obtenemos las notas actuales
+    const [notasActuales] = await new Promise((resolve, reject) => {
+      db.query(
+        `SELECT c.CANDIDATA_ID, SUM(cal.CALIFICACION_VALOR) as total 
+         FROM candidata c 
+         JOIN calificacion cal ON c.CANDIDATA_ID = cal.CANDIDATA_ID 
+         WHERE cal.EVENTO_ID != 5 
+         GROUP BY c.CANDIDATA_ID 
+         ORDER BY total DESC`,
+        (err, results) => {
+          if (err) reject(err);
+          else resolve([results]);
+        }
+      );
+    });
+
+    // Procesamos según el tipo de empate
+    let calificacionesFinales = [];
+    
+    if (tipo_empate === 'primer-lugar') {
+      calificacionesFinales = calificaciones;
+    } 
+    else if (tipo_empate === 'segundo-lugar') {
+      const primerLugar = notasActuales[0].total;
+      const maximoDesempate = Math.max(...calificaciones.map(c => c.CALIFICACION_VALOR));
+      const factor = 0.95;
+      
+      calificacionesFinales = calificaciones.map(cal => ({
+        ...cal,
+        CALIFICACION_VALOR: (cal.CALIFICACION_VALOR / maximoDesempate) * (primerLugar - notasActuales[1].total) * factor
+      }));
+    }
+    else if (tipo_empate === 'tercer-lugar') {
+      const segundoLugar = notasActuales[1].total;
+      const maximoDesempate = Math.max(...calificaciones.map(c => c.CALIFICACION_VALOR));
+      const factor = 0.95;
+      
+      calificacionesFinales = calificaciones.map(cal => ({
+        ...cal,
+        CALIFICACION_VALOR: (cal.CALIFICACION_VALOR / maximoDesempate) * (segundoLugar - notasActuales[2].total) * factor
+      }));
+    }
+
+    // Insertamos en la tabla finales
+    for (const cal of calificacionesFinales) {
+      await new Promise((resolve, reject) => {
+        db.query(
+          `INSERT INTO finales 
+           (EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [cal.EVENTO_ID, cal.USUARIO_ID, cal.CANDIDATA_ID, cal.CALIFICACION_NOMBRE, cal.CALIFICACION_PESO, cal.CALIFICACION_VALOR],
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          }
+        );
+      });
+    }
+
+    // Actualizamos las notas finales
+    await new Promise((resolve, reject) => {
+      db.query(
+        `UPDATE candidata c 
+         JOIN (
+           SELECT CANDIDATA_ID, SUM(CALIFICACION_VALOR) as total 
+           FROM (
+             SELECT CANDIDATA_ID, CALIFICACION_VALOR FROM calificacion 
+             UNION ALL 
+             SELECT CANDIDATA_ID, CALIFICACION_VALOR FROM finales
+           ) todas_cal 
+           GROUP BY CANDIDATA_ID
+         ) totales ON c.CANDIDATA_ID = totales.CANDIDATA_ID 
+         SET c.CAND_NOTA_FINAL = totales.total`,
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }
+      );
+    });
+
+    res.status(200).json({ message: "Desempate procesado exitosamente" });
+  } catch (error) {
+    console.error("Error en procesarDesempateFinal:", error);
+    res.status(500).json({ error: error.message || "Error procesando el desempate" });
+  }
 };

@@ -11,7 +11,9 @@ import {
     actualizarPuntajeFinal,
     cerrarVotaciones,
     getCandidatasParaVotacion,
-    checkUserVoted
+    checkUserVoted,
+    addFinalCalificacion,
+    procesarDesempateFinal
 } from "../controllers/cali.js";
 
 const router = express.Router();
@@ -28,5 +30,7 @@ router.put("/actualizarPuntajeFinal", actualizarPuntajeFinal);
 router.put("/cerrarVotaciones", cerrarVotaciones);
 router.get("/candidatasVotacion", getCandidatasParaVotacion);
 router.get("/checkUserVoted/:userId", checkUserVoted);
+router.post("/final", addFinalCalificacion);
+router.post("/desempate_final", procesarDesempateFinal);
 
 export default router;

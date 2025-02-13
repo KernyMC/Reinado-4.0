@@ -17,7 +17,8 @@ import {
   updateUserFeatures,
   cambioDesempate,
   checkDesempate,
-  cerrarVotacionPublica
+  cerrarVotacionPublica,
+  verificarEmpate
 } from "../controllers/user.js";
 
 const router = express.Router();
@@ -32,6 +33,8 @@ router.post("/limpiarVotaciones", limpiarVotaciones);
 router.put("/activarEventoPublico", activarEventoPublico);
 router.put("/cambio/:estado/:idEvento", actualizarEstadoEvento);
 router.put("/:userId/features", updateUserFeatures);
+router.get("/verificar_empate", verificarEmpate);
+
 router.put("/cambio-desempate/:estado", cambioDesempate);
 router.get("/check-desempate", checkDesempate);
 router.put("/cerrar-votacion-publica", cerrarVotacionPublica);

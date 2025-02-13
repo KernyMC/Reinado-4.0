@@ -22,14 +22,19 @@ export const createEvent = (req, res) => {
 
 export const updateEvent = (req, res) => {
   const eventId = req.params.id;
-  const { EVENTO_NOMBRE, EVENTO_PESO, EVENTO_ESTADO } = req.body;
+  const { EVENTO_ESTADO } = req.body;
+  
   const sql = `
-    UPDATE evento
-    SET EVENTO_NOMBRE = ?, EVENTO_PESO = ?, EVENTO_ESTADO = ?
+    UPDATE evento 
+    SET EVENTO_ESTADO = ?
     WHERE EVENTO_ID = ?
   `;
-  db.query(sql, [EVENTO_NOMBRE, EVENTO_PESO, EVENTO_ESTADO, eventId], (err, result) => {
-    if (err) return res.status(500).json(err);
+  
+  db.query(sql, [EVENTO_ESTADO, eventId], (err, result) => {
+    if (err) {
+      console.error("Error actualizando evento:", err);
+      return res.status(500).json(err);
+    }
     return res.status(200).json("Evento actualizado exitosamente.");
   });
 };
