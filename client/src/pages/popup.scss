@@ -1,0 +1,65 @@
+/* Modal estilos generales */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+}
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Estilos específicos del contenido del modal */
+.modal-title {
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.modal-p {
+    padding: 0px 0px 30px 0px;
+    text-align: center;
+}
+
+.botones-modal {
+    text-align: center;
+}
+
+.btn-confirmar,
+.btn-cancelar {
+
+    text-align: center;
+    padding: 8px 16px;
+    margin-left: 1%;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-confirmar {
+    background-color: #27ae60;
+    color: #fff;
+    border: none;
+}
+
+.btn-cancelar {
+    background-color: #cf3726;
+    color: #fff;
+    border: none;
+}

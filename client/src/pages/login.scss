@@ -1,0 +1,166 @@
+        .Login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 100vw;
+            min-height: 100vh;
+            background: linear-gradient(2f9c61, rgb(214, 214, 214));
+            font-family: "Open sans", sans-serif;
+        }
+
+        .containerL {
+            display: flex;
+            justify-content: center;
+            padding-top: 40px;
+            padding-left: 80px;
+            flex-wrap: nowrap;
+        }
+
+        .card-1 {
+            background: white;
+            width: 400px;
+            height: 605px;
+            border-radius: 15px 0px 0px 15px;
+        }
+
+        .iniciar-sesion {
+            text-align: center;
+            font-weight: 600;
+            text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+            -webkit-text-stroke: 1px #000;
+            mix-blend-mode: normal;
+        }
+
+        .contenedorFormulario {
+            padding: 20px 20px 0px 30px;
+        }
+
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 8px 10px 10px;
+        }
+
+        .input-container span {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+
+        .input-container label {
+            margin-bottom: 15px;
+        }
+
+        .input-container input {
+            height: 1.5em;
+            width: 15em;
+            border-radius: 15px;
+            border-width: 15px;
+            border: white;
+            box-shadow: 0 0 6px rgb(76, 78, 69);
+            outline: none;
+            padding: 10px;
+            font-size: 20px;
+        }
+
+        input:focus {
+            box-shadow: 0 1px 1px rgba(229, 103, 23, 0.075) inset,
+                0 0 16px rgb(117, 255, 115);
+            outline: 0 none;
+        }
+
+        .card-2 {
+            background: #2f9c61;
+            width: 400px;
+            height: 605px;
+            border-radius: 0px 15px 15px 0px;
+            background-size: 100%;
+        }
+
+        .siluetaReina {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            mix-blend-mode: soft-light;
+            border-radius: 15px;
+        }
+
+        .rect-negro {
+            background-color: black;
+            height: 170px;
+            max-width: 29.5vw;
+            max-height: 170px;
+            margin-bottom: 15px;
+            border-radius: 15px 0px 0px 0px;
+            background-size: 100%;
+            display: grid;
+            place-items: center;
+        }
+        .negro-imagen{
+            max-width: 29.5vw;
+            max-height: 170px;
+            color: white;
+            display: grid;
+            place-items: center;
+        }
+        .logoespereina{
+            display: grid;
+            place-items: center;
+            object-fit: contain;
+        }
+        #logoLogin{
+            scale: 0.85;
+        }
+
+        .loginBut {
+            height: 4em;
+            width: 24em;
+            margin: 10px;
+            margin-top: 25px;
+            border-radius: 15px;
+            background: linear-gradient(rgb(255, 114, 114), rgb(246, 68, 68));
+            opacity: 0.8;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .loginBut p {
+            font-weight: bolder;
+            color: white;
+            font-size: 20px;
+        }
+
+        .loginBut:hover {
+            border: 2px solid var(--button-bg);
+            opacity: 1;
+            /* Ajusta el valor según tus preferencias */
+        }        
+
+        @media screen and (max-width: 600px) {
+            .card-1 {
+                height: 100%;
+                width: 100%;
+                margin-bottom: 20px;
+                border-radius: 15px 15px 15px 15px;
+            }
+
+            .rect-negro {
+                border-radius: 15px 15px 0px 0px;
+            }
+
+            .card-2 {
+                display: none;
+            }
+
+            .container {
+                padding-top: 40px;
+            }
+
+            .contenedorFormulario {
+                padding: 10px 40px 30px 10px;
+            }
+        }
+
+        
+

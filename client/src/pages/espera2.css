@@ -1,0 +1,51 @@
+.espera2{
+    position:relative;
+    height:100vh;
+    margin:0%;
+    background-color: black;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.espera2 h1{
+    color:#ffd700;
+    font-size: 4em;
+}
+
+.cortina_izquierda{
+    position:absolute;
+    margin: 0;
+    left:0;
+    background-image: url(./Sprite_Cortinas.png);
+    background-size:1650%;
+    height:110vh;
+    width:50%;
+    animation: telon .15s steps(15);
+    animation-delay:1s;
+    animation-fill-mode:both;
+
+}
+.cortina_derecha{
+    position:absolute;
+    margin: 0;
+    right:0;
+    background-image: url(./Sprite_Cortinas.png);
+    background-size:1665%;
+    height:110vh;
+    width:50%;
+    animation: telon .15s steps(15);
+    animation-delay:1s;
+    animation-fill-mode:both;
+    transform:scaleX(-1);
+}
+
+@keyframes telon {
+    0%{
+        background-position: 0% 0%;
+    }
+    100%{
+        background-position:100% 0%;
+    }
+}
