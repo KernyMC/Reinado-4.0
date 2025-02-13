@@ -206,112 +206,99 @@ export const checkVotacionPublica = async (req, res) => {
 };
 
 export const votarPublico = (req, res) => {
-    const { USUARIO_ID, CANDIDATA_ID } = req.body;
-    const EVENTO_ID = 4; // ID del evento de votación pública
+  const { USUARIO_ID, CANDIDATA_ID } = req.body;
 
-    // Primero verificar si el evento está activo
-    db.query("SELECT EVENTO_ESTADO FROM evento WHERE EVENTO_ID = ?", [EVENTO_ID], (err, eventoRows) => {
-        if (err) {
-            console.error("Error verificando estado del evento:", err);
-            return res.status(500).json({ message: "Error al procesar el voto" });
-        }
+  // Verificar si el usuario ya votó
+  const checkQuery = `
+    SELECT COUNT(*) as count 
+    FROM votaciones_publico 
+    WHERE USUARIO_ID = ?`;
+  
+  db.query(checkQuery, [USUARIO_ID], (err, result) => {
+    if (err) {
+      console.error("Error verificando voto:", err);
+      return res.status(500).json({ message: "Error al verificar el voto" });
+    }
+    
+    if (result[0].count > 0) {
+      return res.status(400).json({ message: "Ya has emitido tu voto" });
+    }
 
-        if (!eventoRows[0] || eventoRows[0].EVENTO_ESTADO !== 'si') {
-            return res.status(400).json({
-                message: "La votación pública no está activa en este momento"
-            });
-        }
-
-        // Verificar si el usuario ya votó
-        db.query(
-            "SELECT * FROM calificacion WHERE USUARIO_ID = ? AND EVENTO_ID = ?",
-            [USUARIO_ID, EVENTO_ID],
-            (err, voteRows) => {
-                if (err) {
-                    console.error("Error verificando voto existente:", err);
-                    return res.status(500).json({ message: "Error al procesar el voto" });
-                }
-
-                if (voteRows.length > 0) {
-                    return res.status(400).json({
-                        message: "Ya has emitido tu voto"
-                    });
-                }
-
-                // Registrar el voto
-                const insertQuery = `
-                    INSERT INTO calificacion 
-                    (EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR) 
-                    VALUES (?, ?, ?, 'Voto Público', 100, 1)
-                `;
-
-                db.query(insertQuery, [EVENTO_ID, USUARIO_ID, CANDIDATA_ID], (err) => {
-                    if (err) {
-                        console.error("Error registrando voto:", err);
-                        return res.status(500).json({ message: "Error al procesar el voto" });
-                    }
-
-                    res.status(200).json({ message: "Voto registrado exitosamente" });
-                });
-            }
-        );
+    // Registrar el voto
+    const insertQuery = `
+      INSERT INTO votaciones_publico (USUARIO_ID, CANDIDATA_ID) 
+      VALUES (?, ?)`;
+    
+    db.query(insertQuery, [USUARIO_ID, CANDIDATA_ID], (err, result) => {
+      if (err) {
+        console.error("Error registrando voto:", err);
+        return res.status(500).json({ message: "Error al registrar el voto" });
+      }
+      
+      res.status(200).json({ message: "Voto registrado exitosamente" });
+    });
   });
 };
 
-export const cerrarVotaciones = async (req, res) => {
-  try {
-    // 1. Cerrar todos los eventos
-    await db.query("UPDATE evento SET EVENTO_ESTADO = 'no'");
+export const cerrarVotaciones = (req, res) => {
+  // 1. Obtener conteo de votos por candidata
+  const votosQuery = `
+    SELECT CANDIDATA_ID, COUNT(*) as total_votos
+    FROM votaciones_publico
+    GROUP BY CANDIDATA_ID
+    ORDER BY total_votos DESC`;
+  
+  db.query(votosQuery, (err, votos) => {
+    if (err) {
+      console.error("Error obteniendo votos:", err);
+      return res.status(500).json({ message: "Error al procesar los votos" });
+    }
 
-    // 2. Obtener la candidata con más votos públicos
-    const votacionQuery = `
-      SELECT CANDIDATA_ID, COUNT(*) as total_votos 
-      FROM votaciones 
-      WHERE EVENTO_ID = 4 
-      GROUP BY CANDIDATA_ID 
-      ORDER BY total_votos DESC`;
+    // 2. Identificar top 3
+    const top3 = votos.slice(0, 3);
+    
+    // 3. Calcular puntos por posición
+    const puntajes = [
+      { posicion: 1, puntos: 15 },
+      { posicion: 2, puntos: 10 },
+      { posicion: 3, puntos: 5 }
+    ];
 
-    db.query(votacionQuery, async (err, results) => {
-      if (err) throw err;
+    let procesados = 0;
+    
+    // 4. Registrar resultados finales
+    top3.forEach((candidata, index) => {
+      const puntos = puntajes[index].puntos;
 
-      if (results.length > 0) {
-        const maxVotos = results[0].total_votos;
-        const candidatasMaxVotos = results.filter(r => r.total_votos === maxVotos);
-
-        let candidataGanadora;
-
-        if (candidatasMaxVotos.length === 1) {
-          // Si hay una única ganadora
-          candidataGanadora = candidatasMaxVotos[0].CANDIDATA_ID;
-        } else {
-          // Si hay empate, usar calificación de jueces como desempate
-          const desempateQuery = `
-            SELECT CANDIDATA_ID, SUM(CALIFICACION_VALOR) as total_puntos
-            FROM calificacion 
-            WHERE CANDIDATA_ID IN (${candidatasMaxVotos.map(c => c.CANDIDATA_ID).join(',')})
-            GROUP BY CANDIDATA_ID 
-            ORDER BY total_puntos DESC 
-            LIMIT 1`;
-
-          const [ganadora] = await db.promise().query(desempateQuery);
-          candidataGanadora = ganadora[0].CANDIDATA_ID;
+      const insertFinal = `
+        INSERT INTO finales (EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR)
+        VALUES (4, 1, ?, 'Votación Pública', 100, ?)`;
+      
+      db.query(insertFinal, [candidata.CANDIDATA_ID, puntos], (err) => {
+        if (err) {
+          console.error("Error insertando final:", err);
+          return res.status(500).json({ message: "Error al registrar resultados" });
         }
 
-        // Agregar bono a la ganadora (10 puntos adicionales)
-        const bonoQuery = `
-          UPDATE candidata 
-          SET CAND_NOTA_FINAL = CAND_NOTA_FINAL + 10 
-          WHERE CANDIDATA_ID = ?`;
-
-        await db.promise().query(bonoQuery, [candidataGanadora]);
-      }
-
-      res.status(200).json({ message: "Votaciones cerradas y bono aplicado exitosamente" });
+        procesados++;
+        if (procesados === top3.length) {
+          // Actualizar el estado del evento a cerrado
+          const updateEvento = "UPDATE evento SET EVENTO_ESTADO = 'no' WHERE EVENTO_ID = 4";
+          db.query(updateEvento, (err) => {
+            if (err) {
+              console.error("Error actualizando estado evento:", err);
+              return res.status(500).json({ message: "Error al cerrar votación" });
+            }
+            
+            res.status(200).json({ 
+              message: "Votación pública cerrada y resultados registrados",
+              resultados: top3
+            });
+          });
+        }
+      });
     });
-  } catch (error) {
-    console.error("Error en cerrarVotaciones:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
+  });
 };
 
 export const actualizarPuntajeFinal = (req, res) => {
