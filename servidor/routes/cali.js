@@ -11,7 +11,8 @@ import {
     actualizarPuntajeFinal,
     cerrarVotaciones,
     getCandidatasParaVotacion,
-    checkUserVoted
+    checkUserVoted,
+    aplicarBonoPublico
 } from "../controllers/cali.js";
 
 const router = express.Router();
@@ -28,5 +29,6 @@ router.put("/actualizarPuntajeFinal", actualizarPuntajeFinal);
 router.put("/cerrarVotaciones", cerrarVotaciones);
 router.get("/candidatasVotacion", getCandidatasParaVotacion);
 router.get("/checkUserVoted/:userId", checkUserVoted);
+router.put("/aplicarBonoPublico", aplicarBonoPublico);
 
 export default router;

@@ -147,8 +147,8 @@ const PanelAdmin = () => {
       console.log("Todos los eventos han sido cerrados (EVENTO_ESTADO = 'no').");
   
       // 2) Actualizar PUNTAJE FINAL
-      await Axios.put(`${API_BASE_URL}/cali/actualizarPuntajeFinal`);
-      console.log("Puntaje final de candidatas actualizado correctamente.");
+      await Axios.post(`${API_BASE_URL}/cali/aplicarBonoPublico`);
+      console.log("Bono de votación pública insertado en la tabla 'finales'.");
   
       // 3) Cerrar popup
       setPopUpCerrarFinal(false);

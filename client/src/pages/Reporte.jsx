@@ -20,7 +20,8 @@ function Reporte() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await Axios.get(`${API_BASE_URL}/candidatas`);
+        // Nuevo endpoint => GET /candidatas/vistaPuntuaciones
+        const res = await Axios.get(`${API_BASE_URL}/candidatas/vistaPuntuaciones`);
         setListaReinas(res.data);
       } catch (err) {
         console.log(err);
@@ -28,6 +29,7 @@ function Reporte() {
     };
     fetchData();
   }, [cat]);
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -167,8 +169,8 @@ function Reporte() {
 
                     <React.Fragment>
                       {listaReinas
-                        .sort((a, b) => b.CAND_NOTA_FINAL - a.CAND_NOTA_FINAL)
-                        .map((reina, index) => (
+                          .sort((a, b) => b.CAND_PUNTUACION_TOTAL - a.CAND_PUNTUACION_TOTAL)
+                          .map((reina, index) => (
                           <View
                             style={styles.contenedorColumna}
                             key={reina.CANDIDATA_ID}
@@ -249,7 +251,7 @@ function Reporte() {
 
                     <React.Fragment>
                       {listaDepartamentos
-                        .sort((a, b) => b.CAND_NOTA_FINAL - a.CAND_NOTA_FINAL)
+                       .sort((a, b) => b.CAND_PUNTUACION_TOTAL - a.CAND_PUNTUACION_TOTAL)
                         .slice(0, 3)
                         .map((reina, index) => (
                           <View
