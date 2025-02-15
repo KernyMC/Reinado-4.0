@@ -150,6 +150,16 @@ export const getTopCandidatas = (req, res) => {
     });
 };
 
+
+export const getVistaPuntuaciones = (req, res) => {
+  const q = "SELECT * FROM vista_puntuaciones";
+  db.query(q, (err, data) => {
+    if (err) return res.status(500).json(err);
+    return res.status(200).json(data);
+  });
+};
+
+
 //crud candidatas
 
 

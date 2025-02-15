@@ -20,7 +20,8 @@ import {
     verificarDesempateCompleto,
     verificarEmpate,
     submitVotacionPublica,
-    contabilizarVotosPublicos
+    contabilizarVotosPublicos,
+    getVistaPuntuaciones
 } from "../controllers/candidatas.js";
 
 const router = express.Router();
@@ -35,6 +36,7 @@ router.get("/votaciones", getVotacionesNotario);
 router.get("/tt", getCandidatasTrajeTipico);
 router.get("/tg", getCandidatasTrajeGala);
 router.get("/topCandidatas", getTopCandidatas);
+router.get("/vistaPuntuaciones", getVistaPuntuaciones);
 router.get("/carreras", getAllCarreras);
 router.get("/all", getAllCandidatas);
 router.get("/verificar-evento/:eventoId", verificarEvento);
