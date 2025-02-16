@@ -46,6 +46,7 @@ export const limpiarVotaciones = (req, res) => {
     "TRUNCATE TABLE calificacion;",
     "TRUNCATE TABLE finales;",
     "TRUNCATE TABLE votaciones;",
+    "TRUNCATE TABLE votaciones_publicos;"
     
   ];
 

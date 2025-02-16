@@ -302,19 +302,37 @@ export const cerrarVotaciones = (req, res) => {
 };
 
 export const actualizarPuntajeFinal = (req, res) => {
-  const sqlUpdate = `
+  const sqlUpdate1 = `
     UPDATE candidata c
     JOIN (
       SELECT CANDIDATA_ID, SUM(CALIFICACION_VALOR) AS total_votos
       FROM calificacion
-      WHERE EVENTO_ID IN (1, 2, 3, 4)
+      WHERE EVENTO_ID IN (1, 2, 3)
       GROUP BY CANDIDATA_ID
     ) v ON c.CANDIDATA_ID = v.CANDIDATA_ID
     SET c.CAND_NOTA_FINAL = v.total_votos
   `;
-  db.query(sqlUpdate, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.status(200).json("Puntaje final actualizado correctamente.");
+
+  const sqlUpdate2 = `
+    UPDATE candidata c
+    JOIN (
+      SELECT CANDIDATA_ID, CAND_PUNTUACION_TOTAL
+      FROM vista_puntuaciones
+    ) v ON c.CANDIDATA_ID = v.CANDIDATA_ID
+    SET c.CAND_CALIFICACIONFINAL = v.CAND_PUNTUACION_TOTAL
+  `;
+
+  // Ejecutar primera consulta
+  db.query(sqlUpdate1, (err1, result1) => {
+    if (err1) return res.status(500).json(err1);
+    
+    // Ejecutar segunda consulta solo si la primera fue exitosa
+    db.query(sqlUpdate2, (err2, result2) => {
+      if (err2) return res.status(500).json(err2);
+      
+      // Enviar respuesta solo después de que ambas consultas se completen
+      res.status(200).json("Puntajes finales actualizados correctamente.");
+    });
   });
 };
 
@@ -356,41 +374,4 @@ export const checkUserVoted = (req, res) => {
         }
         res.json({ hasVoted: rows[0].count > 0 });
   });
-};
-
-
-// controllers/cali.js
-export const aplicarBonoPublico = async (req, res) => {
-  try {
-    // 1. Leer la cantidad de votos por candidata en la tabla votaciones_publico (o la que uses)
-    //    Ajusta el nombre si tu tabla se llama "votaciones_publico" o "votaciones"
-    const [rows] = await db.query(`
-      SELECT CANDIDATA_ID, COUNT(*) AS total
-      FROM votaciones_publico
-      GROUP BY CANDIDATA_ID
-      ORDER BY total DESC
-    `);
-
-    // 2. Recorre y asigna bonificaciones (15, 10, 5). Ajusta según tu lógica.
-    const bonos = [15, 10, 5];
-
-    for (let i = 0; i < rows.length; i++) {
-      const candidataId = rows[i].CANDIDATA_ID;
-      const bonus = bonos[i] ?? 0; // si hay más de 3, el resto recibe 0.
-
-      // 3. Inserta/actualiza en la tabla finales (EVENTO_ID=4).
-      //    Ajusta USUARIO_ID=1 si quieres, o un user representativo
-      //    o QUITA el ON DUPLICATE si tu PK no lo exige.
-      await db.query(`
-        INSERT INTO finales (EVENTO_ID, USUARIO_ID, CANDIDATA_ID, CALIFICACION_NOMBRE, CALIFICACION_PESO, CALIFICACION_VALOR)
-        VALUES (4, 1, ?, 'Votación Pública', 100, ?)
-        ON DUPLICATE KEY UPDATE CALIFICACION_VALOR=?
-      `, [candidataId, bonus, bonus]);
-    }
-
-    return res.status(200).json({ message: "Bono público aplicado correctamente." });
-  } catch (error) {
-    console.error("Error en aplicarBonoPublico:", error);
-    return res.status(500).json({ message: "Error al aplicar bono público." });
-  }
 };

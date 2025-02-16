@@ -140,21 +140,22 @@ const PanelAdmin = () => {
   };
 
   // Manejo PopUp para "Cerrar y Generar Reporte"
-  const handleGenerarReporte = async () => {
+  const handleGenerarReporte = () => {
+    navigate("/reporte");
+  };
+
+  const handleCerrarVotaciones = async () => {
     try {
       // 1) Cerrar votaciones (todos los eventos)
       await Axios.put(`${API_BASE_URL}/cali/cerrarVotaciones`);
       console.log("Todos los eventos han sido cerrados (EVENTO_ESTADO = 'no').");
   
       // 2) Actualizar PUNTAJE FINAL
-      await Axios.post(`${API_BASE_URL}/cali/aplicarBonoPublico`);
-      console.log("Bono de votación pública insertado en la tabla 'finales'.");
+      await Axios.put(`${API_BASE_URL}/cali/actualizarPuntajeFinal`);
+      console.log("Puntaje final de candidatas actualizado correctamente.");
   
       // 3) Cerrar popup
       setPopUpCerrarFinal(false);
-  
-      // 4) Redirigir a /reporte
-      navigate("/reporte");
     } catch (err) {
       console.log(err);
     }
@@ -312,6 +313,9 @@ const PanelAdmin = () => {
             {/* Botón para "Cerrar todo" y Generar Reporte */}
             <div style={{ marginTop: "20px" }}>
               <button className="btn" onClick={() => setPopUpCerrarFinal(true)}>
+                Cerrar Votaciones
+              </button>
+              <button className="btn" onClick={handleGenerarReporte}>
                 Generar Reporte
               </button>
             </div>
@@ -429,14 +433,14 @@ const PanelAdmin = () => {
               </div>
             </Popup>
 
-            {/* Popup de confirmación para "Cerrar y Generar Reporte" */}
+            {/* Popup de confirmación para "Cerrar Votaciones" */}
             <Popup
               open={popUpCerrarFinal}
               onClose={() => setPopUpCerrarFinal(false)}
             >
               <div className="modal">
                 <h2 className="modal-title">
-                  ¿Estás seguro de cerrar la votación y generar el reporte?
+                  ¿Estás seguro de cerrar la votación?
                 </h2>
                 <div className="botones-modal">
                   <button
@@ -445,8 +449,8 @@ const PanelAdmin = () => {
                   >
                     Cancelar
                   </button>
-                  <button onClick={handleGenerarReporte} className="btn-confirmar">
-                    Cerrar y Generar
+                  <button onClick={handleCerrarVotaciones} className="btn-confirmar">
+                    Cerrar Votaciones
                   </button>
                 </div>
               </div>

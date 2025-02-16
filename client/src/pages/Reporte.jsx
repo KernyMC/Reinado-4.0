@@ -34,7 +34,7 @@ function Reporte() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await Axios.get(`${API_BASE_URL}/candidatas/carruselCandidatas`);
+        const res = await Axios.get(`${API_BASE_URL}/candidatas/vistaPuntuaciones`);
         setListaDepartamentos(res.data);
       } catch (err) {
         console.log(err);
@@ -44,8 +44,8 @@ function Reporte() {
   }, [cat, votacionTerminada]);
 
   useEffect(() => {
-    // Verificamos si TODAS las candidatas tienen CAND_NOTA_FINAL != 0
-    const verificacion = listaReinas.every((reina) => reina.CAND_NOTA_FINAL !== 0.00);
+    // Verificamos si TODAS las candidatas tienen CAND_PUNTUACION_TOTAL != 0
+    const verificacion = listaReinas.every((reina) => reina.CAND_PUNTUACION_TOTAL !== 0.00);
     isVotacionTerminada(verificacion);
     console.log("¿Votación Terminada?", verificacion);
   }, [listaReinas]);
@@ -195,7 +195,7 @@ function Reporte() {
                                 Puntuación Final:
                               </Text>
                               <Text style={styles.text}>
-                                {reina.CAND_NOTA_FINAL}/150
+                                {reina.CAND_PUNTUACION_TOTAL}/150
                               </Text>
                             </View>
                             <View style={styles.columna}>
@@ -281,7 +281,7 @@ function Reporte() {
                                 {reina.DEPARTMENTO_NOMBRE}
                               </Text>
                               <Text style={styles.tituloreina}>
-                                Puntuación Final de: {reina.CAND_NOTA_FINAL}/150
+                                Puntuación Final de: {reina.CAND_PUNTUACION_TOTAL}/150
                               </Text>
                             </View>
                           </View>
