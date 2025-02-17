@@ -26,6 +26,10 @@ class EventAdministratorWidget extends StatelessWidget {
   }
 
   Future<void> handleGenerateReport(BuildContext context) async {
+    Navigator.pushNamed(context, '/report');
+  }
+
+  Future<void> handleCloseVoting() async {
     try {
       // 1) Cerrar votaciones
       await ApiService.put('/cali/cerrarVotaciones', {});
@@ -34,20 +38,17 @@ class EventAdministratorWidget extends StatelessWidget {
       // 2) Actualizar PUNTAJE FINAL
       await ApiService.put('/cali/actualizarPuntajeFinal', {});
       print("Puntaje final de candidatas actualizado correctamente.");
-
-      // 3) Navegar a Reporte
-      Navigator.pushNamed(context, '/report');
     } catch (error) {
-      print('Error generating report: $error');
+      print('Error closing voting: $error');
     }
   }
 
-  void showGenerateReportDialog(BuildContext context) {
+  void showCloseVotingDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('¿Estás seguro de cerrar la votación y generar el reporte?'),
+          title: const Text('¿Estás seguro de querer cerrar las votaciones?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -59,14 +60,14 @@ class EventAdministratorWidget extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
+                handleCloseVoting();
                 Navigator.of(context).pop();
-                handleGenerateReport(context);
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Cerrar y Generar'),
+              child: const Text('Aceptar'),
             ),
           ],
         );
@@ -235,9 +236,45 @@ class EventAdministratorWidget extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Botones de Reiniciar y Generar Reporte
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Column(
             children: [
+              SizedBox(
+                width: 200,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () => showCloseVotingDialog(context),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF416C), Color(0xFFFF4B2B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      constraints: const BoxConstraints(
+                        minWidth: 88,
+                        minHeight: 40,
+                      ),
+                      child: const Text(
+                        '⛔ Cerrar Votaciones',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: 200,
                 child: ElevatedButton(
@@ -294,7 +331,7 @@ class EventAdministratorWidget extends StatelessWidget {
                         minHeight: 40,
                       ),
                       child: const Text(
-                        'Reiniciar Votaciones',
+                        '⟳ Reiniciar Votaciones',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -305,6 +342,7 @@ class EventAdministratorWidget extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: 200,
                 child: ElevatedButton(
@@ -314,7 +352,7 @@ class EventAdministratorWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () => showGenerateReportDialog(context),
+                  onPressed: () => handleGenerateReport(context),
                   child: Ink(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -330,12 +368,17 @@ class EventAdministratorWidget extends StatelessWidget {
                         minWidth: 88,
                         minHeight: 40,
                       ),
-                      child: const Text(
-                        'Generar Reporte',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '📋 Generar Reporte ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

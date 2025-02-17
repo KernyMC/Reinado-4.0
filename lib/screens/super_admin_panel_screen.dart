@@ -410,11 +410,22 @@ class _SuperAdminPanelScreenState extends State<SuperAdminPanelScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 12,
+          ),
           tabs: const [
-            Tab(text: 'Roles'),
-            Tab(text: 'Eventos'),
-            Tab(text: 'Usuarios'),
-            Tab(text: 'Candidatas'),
+            Tab(icon: Icon(Icons.admin_panel_settings), text: 'Roles'),
+            Tab(icon: Icon(Icons.event), text: 'Eventos'),
+            Tab(icon: Icon(Icons.people), text: 'Usuarios'),
+            Tab(icon: Icon(Icons.emoji_events), text: 'Candidatas'),
           ],
         ),
       ),

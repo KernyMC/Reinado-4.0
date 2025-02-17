@@ -138,7 +138,7 @@ export const getTopCandidatas = (req, res) => {
         SELECT CANDIDATA_ID, CAND_NOMBRE1, CAND_APELLIDOPATERNO, CAND_PUNTUACION_TOTAL
         FROM vista_puntuaciones
         ORDER BY CAND_PUNTUACION_TOTAL DESC
-        LIMIT 3;
+        LIMIT 12;
     `;
     db.query(sqlSelect, (err, data) => {
         if (err) {
