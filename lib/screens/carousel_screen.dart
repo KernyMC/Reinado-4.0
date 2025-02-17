@@ -105,14 +105,16 @@ class _CarouselScreenState extends State<CarouselScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0D4F02), Color(0xFF0D4F02)],
+            ),
+          ),
         ),
+        elevation: 0,
         title: const Text(
           'Candidatas',
           style: TextStyle(

@@ -56,17 +56,24 @@ class _CandidatasTabWidgetState extends State<CandidatasTabWidget> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
-      child: Card(
-        margin: const EdgeInsets.all(8.0),
-        color: Colors.white.withOpacity(0.1),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0D4F02), Color(0xFF002401)],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Card(
+            margin: const EdgeInsets.all(8.0),
+            color: Colors.white.withOpacity(0.1),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Gestión de Candidatas',
@@ -75,194 +82,267 @@ class _CandidatasTabWidgetState extends State<CandidatasTabWidget> {
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddEditDialog(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nueva Candidata'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D4F02),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowColor: WidgetStateProperty.all(
+                        const Color(0xFF0D4F02).withOpacity(0.3),
+                      ),
+                      columns: const [
+                        DataColumn(
+                          label: Text(
+                            'Nombre Completo',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Carrera',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Acciones',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                      rows: widget.candidatas.map((candidata) {
+                        final nombreCompleto = '${candidata['CAND_NOMBRE1']} '
+                            '${candidata['CAND_NOMBRE2'] ?? ''} '
+                            '${candidata['CAND_APELLIDOPATERNO']} '
+                            '${candidata['CAND_APELLIDOMATERNO']}'
+                            .trim();
+
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Text(
+                                nombreCompleto,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                candidata['CARRERA_NOMBRE'] ?? '',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.white),
+                                    onPressed: () => _showAddEditDialog(
+                                      context,
+                                      candidata: candidata,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteDialog(
+                                      context,
+                                      candidata['CANDIDATA_ID'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(
-                    const Color(0xFF0D4F02).withOpacity(0.3),
-                  ),
-                  columns: const [
-                    DataColumn(
-                      label: Text('Nombre Completo',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                    DataColumn(
-                      label: Text('Carrera',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                    DataColumn(
-                      label: Text('Acciones',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                  rows: widget.candidatas.map((candidata) {
-                    final nombreCompleto = '${candidata['CAND_NOMBRE1']} ${candidata['CAND_NOMBRE2'] ?? ''} ${candidata['CAND_APELLIDOPATERNO']} ${candidata['CAND_APELLIDOMATERNO']}'.trim();
-                    
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(nombreCompleto,
-                          style: const TextStyle(color: Colors.white),
-                        )),
-                        DataCell(Text(candidata['CARRERA_NOMBRE'] ?? '',
-                          style: const TextStyle(color: Colors.white),
-                        )),
-                        DataCell(Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white),
-                              onPressed: () => _showAddEditDialog(context, candidata: candidata),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _showDeleteDialog(context, candidata['CANDIDATA_ID']),
-                            ),
-                          ],
-                        )),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+
+      /// Botón flotante para agregar candidatas
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF0D4F02),
+        onPressed: () => _showAddEditDialog(context),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Future<void> _showAddEditDialog(BuildContext context, {Map<String, dynamic>? candidata}) async {
+  Future<void> _showAddEditDialog(
+    BuildContext context, {
+    Map<String, dynamic>? candidata,
+  }) async {
     String? selectedCarreraId = candidata?['CARRERA_ID']?.toString();
-    
-    final nombre1Controller = TextEditingController(text: candidata?['CAND_NOMBRE1']);
-    final nombre2Controller = TextEditingController(text: candidata?['CAND_NOMBRE2']);
-    final apellidoPaternoController = TextEditingController(text: candidata?['CAND_APELLIDOPATERNO']);
-    final apellidoMaternoController = TextEditingController(text: candidata?['CAND_APELLIDOMATERNO']);
-    final fechaNacimientoController = TextEditingController(text: candidata?['CAND_FECHANACIMIENTO']);
-    final actividadExtraController = TextEditingController(text: candidata?['CAND_ACTIVIDAD_EXTRA']);
-    final estaturaController = TextEditingController(text: candidata?['CAND_ESTATURA']?.toString());
-    final hobbiesController = TextEditingController(text: candidata?['CAND_HOBBIES']);
-    final idiomasController = TextEditingController(text: candidata?['CAND_IDIOMAS']);
-    final colorOjosController = TextEditingController(text: candidata?['CAND_COLOROJOS']);
-    final colorCabelloController = TextEditingController(text: candidata?['CAND_COLORCABELLO']);
-    final logrosAcademicosController = TextEditingController(text: candidata?['CAND_LOGROS_ACADEMICOS']);
+
+    final nombre1Controller =
+        TextEditingController(text: candidata?['CAND_NOMBRE1']);
+    final nombre2Controller =
+        TextEditingController(text: candidata?['CAND_NOMBRE2']);
+    final apellidoPaternoController =
+        TextEditingController(text: candidata?['CAND_APELLIDOPATERNO']);
+    final apellidoMaternoController =
+        TextEditingController(text: candidata?['CAND_APELLIDOMATERNO']);
+    final fechaNacimientoController =
+        TextEditingController(text: candidata?['CAND_FECHANACIMIENTO']);
+    final actividadExtraController =
+        TextEditingController(text: candidata?['CAND_ACTIVIDAD_EXTRA']);
+    final estaturaController =
+        TextEditingController(text: candidata?['CAND_ESTATURA']?.toString());
+    final hobbiesController =
+        TextEditingController(text: candidata?['CAND_HOBBIES']);
+    final idiomasController =
+        TextEditingController(text: candidata?['CAND_IDIOMAS']);
+    final colorOjosController =
+        TextEditingController(text: candidata?['CAND_COLOROJOS']);
+    final colorCabelloController =
+        TextEditingController(text: candidata?['CAND_COLORCABELLO']);
+    final logrosAcademicosController =
+        TextEditingController(text: candidata?['CAND_LOGROS_ACADEMICOS']);
 
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(candidata == null ? 'Nueva Candidata' : 'Editar Candidata'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: selectedCarreraId,
-                decoration: const InputDecoration(
-                  labelText: 'Carrera *',
-                  labelStyle: TextStyle(color: Colors.black),
-                  border: OutlineInputBorder(),
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: Text(
+          candidata == null ? 'Nueva Candidata' : 'Editar Candidata',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedCarreraId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Carrera *',
+                    labelStyle: TextStyle(color: Colors.black),
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Colors.black),
+                  items: carreras.map((carrera) {
+                    return DropdownMenuItem(
+                      value: carrera['CARRERA_ID'].toString(),
+                      child: Text(
+                        '${carrera['DEPARTAMENTO_NOMBRE']} - ${carrera['CARRERA_NOMBRE']}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedCarreraId = value;
+                      });
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor seleccione una carrera';
+                    }
+                    return null;
+                  },
                 ),
-                dropdownColor: Colors.white,
-                style: const TextStyle(color: Colors.black),
-                items: carreras.map((carrera) {
-                  return DropdownMenuItem(
-                    value: carrera['CARRERA_ID'].toString(),
-                    child: Text(
-                      '${carrera['DEPARTAMENTO_NOMBRE']} - ${carrera['CARRERA_NOMBRE']}',
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      selectedCarreraId = value;
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor seleccione una carrera';
-                  }
-                  return null;
-                },
-              ),
-              TextField(
-                controller: nombre1Controller,
-                decoration: const InputDecoration(labelText: 'Primer Nombre *'),
-              ),
-              TextField(
-                controller: nombre2Controller,
-                decoration: const InputDecoration(labelText: 'Segundo Nombre'),
-              ),
-              TextField(
-                controller: apellidoPaternoController,
-                decoration: const InputDecoration(labelText: 'Apellido Paterno *'),
-              ),
-              TextField(
-                controller: apellidoMaternoController,
-                decoration: const InputDecoration(labelText: 'Apellido Materno *'),
-              ),
-              TextField(
-                controller: fechaNacimientoController,
-                decoration: const InputDecoration(labelText: 'Fecha de Nacimiento'),
-                keyboardType: TextInputType.datetime,
-              ),
-              TextField(
-                controller: actividadExtraController,
-                decoration: const InputDecoration(labelText: 'Actividad Extra'),
-              ),
-              TextField(
-                controller: estaturaController,
-                decoration: const InputDecoration(labelText: 'Estatura'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: hobbiesController,
-                decoration: const InputDecoration(labelText: 'Hobbies'),
-              ),
-              TextField(
-                controller: idiomasController,
-                decoration: const InputDecoration(labelText: 'Idiomas'),
-              ),
-              TextField(
-                controller: colorOjosController,
-                decoration: const InputDecoration(labelText: 'Color de Ojos'),
-              ),
-              TextField(
-                controller: colorCabelloController,
-                decoration: const InputDecoration(labelText: 'Color de Cabello'),
-              ),
-              TextField(
-                controller: logrosAcademicosController,
-                decoration: const InputDecoration(labelText: 'Logros Académicos'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: nombre1Controller,
+                  label: 'Primer Nombre *',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: nombre2Controller,
+                  label: 'Segundo Nombre',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: apellidoPaternoController,
+                  label: 'Apellido Paterno *',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: apellidoMaternoController,
+                  label: 'Apellido Materno *',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: fechaNacimientoController,
+                  label: 'Fecha de Nacimiento',
+                  keyboardType: TextInputType.datetime,
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: actividadExtraController,
+                  label: 'Actividad Extra',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: estaturaController,
+                  label: 'Estatura',
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: hobbiesController,
+                  label: 'Hobbies',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: idiomasController,
+                  label: 'Idiomas',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: colorOjosController,
+                  label: 'Color de Ojos',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: colorCabelloController,
+                  label: 'Color de Cabello',
+                ),
+                const SizedBox(height: 8),
+                _buildTextField(
+                  controller: logrosAcademicosController,
+                  label: 'Logros Académicos',
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D4F02),
+            ),
             onPressed: () {
               if (selectedCarreraId == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Por favor seleccione una carrera')),
+                  const SnackBar(
+                    content: Text('Por favor seleccione una carrera'),
+                  ),
                 );
                 return;
               }
@@ -291,10 +371,31 @@ class _CandidatasTabWidgetState extends State<CandidatasTabWidget> {
 
               Navigator.pop(context);
             },
-            child: Text(candidata == null ? 'Crear' : 'Actualizar'),
+            child: Text(
+              candidata == null ? 'Crear' : 'Guardar',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.black),
+        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      keyboardType: keyboardType,
     );
   }
 
@@ -302,20 +403,30 @@ class _CandidatasTabWidgetState extends State<CandidatasTabWidget> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar Eliminación'),
-        content: const Text('¿Está seguro de que desea eliminar esta candidata?'),
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Confirmar Eliminación',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          '¿Está seguro de que desea eliminar esta candidata?',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           TextButton(
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white)),
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Eliminar'),
             onPressed: () {
               widget.onDeleteCandidata(candidataId);
               Navigator.pop(context);
             },
-            child: const Text('Eliminar'),
           ),
         ],
       ),

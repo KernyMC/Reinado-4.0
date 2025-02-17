@@ -26,27 +26,33 @@ class EventsTab extends StatelessWidget {
         final e = events[index];
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: const Color(0xFF0D4F02).withOpacity(0.3),
           child: ListTile(
             title: Text(
               "${e['EVENTO_NOMBRE']} (ID: ${e['EVENTO_ID']})",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             subtitle: Text(
               "Peso: ${e['EVENTO_PESO']} - Estado: ${e['EVENTO_ESTADO']}",
               style: TextStyle(
-                color: e['EVENTO_ESTADO'] == 'si' ? Colors.green : Colors.red,
+                color: e['EVENTO_ESTADO'] == 'si' 
+                  ? Colors.greenAccent 
+                  : Colors.redAccent,
               ),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  icon: const Icon(Icons.edit, color: Colors.white70),
                   tooltip: 'Editar evento',
                   onPressed: () => _showUpdateEventDialog(context, e),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete, color: Colors.redAccent),
                   tooltip: 'Eliminar evento',
                   onPressed: () => _showDeleteConfirmationDialog(context, e),
                 ),
