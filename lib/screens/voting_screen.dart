@@ -117,18 +117,16 @@ class _VotingScreenState extends State<VotingScreen> {
         error = '';
       });
 
-      await ApiService.submitVote(usuarioId, candidataId, 1);
-
+      final response = await ApiService.submitVote(usuarioId, candidataId, 1);
+      
       if (mounted) {
         setState(() {
           isVoting = false;
           hasVoted = true;
           mensaje = '¡Voto registrado exitosamente!';
         });
-      }
 
-      // Mostrar mensaje de éxito
-      if (mounted) {
+        // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('¡Gracias por tu voto!'),
@@ -140,8 +138,30 @@ class _VotingScreenState extends State<VotingScreen> {
       if (mounted) {
         setState(() {
           isVoting = false;
-          error = 'Error al registrar el voto: $e';
         });
+        
+        // Mostrar diálogo de error personalizado
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('No se puede votar'),
+              content: const Text('Ya has emitido tu voto anteriormente. No es posible votar más de una vez.'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Entendido'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Actualizar el estado para mostrar que ya votó
+                    setState(() {
+                      hasVoted = true;
+                    });
+                  },
+                ),
+              ],
+            );
+          },
+        );
       }
     }
   }

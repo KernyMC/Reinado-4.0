@@ -297,13 +297,12 @@ class UsersTab extends StatelessWidget {
               DropdownButtonFormField<String>(
                 value: selectedRol,
                 decoration: const InputDecoration(labelText: 'Rol'),
-                items: const [
-                  DropdownMenuItem(value: 'usuario', child: Text('Usuario')),
-                  DropdownMenuItem(value: 'juez', child: Text('Juez')),
-                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                  DropdownMenuItem(value: 'notario', child: Text('Notario')),
-                  DropdownMenuItem(value: 'superadmin', child: Text('Super Admin')),
-                ],
+                items: roles.map((role) {
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(role.toUpperCase()),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   selectedRol = value;
                 },

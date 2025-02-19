@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-class EventAdministratorWidget extends StatelessWidget {
+class EventAdministratorWidget extends StatefulWidget {
   final Function() onVotingFinished;
 
   const EventAdministratorWidget({
@@ -9,9 +9,47 @@ class EventAdministratorWidget extends StatelessWidget {
     required this.onVotingFinished,
   });
 
+  @override
+  State<EventAdministratorWidget> createState() => _EventAdministratorWidgetState();
+}
+
+class _EventAdministratorWidgetState extends State<EventAdministratorWidget> {
+  Map<int, bool> eventStates = {
+    1: false, // Traje Típico
+    2: false, // Traje Gala
+    3: false, // Preguntas
+    4: false, // Público
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    fetchEventStates();
+  }
+
+  Future<void> fetchEventStates() async {
+    try {
+      final response = await ApiService.get('/evento/estado');
+      if (mounted) {
+        setState(() {
+          eventStates = Map<int, bool>.from(
+            response.map((key, value) => MapEntry(key, value == 'si')),
+          );
+        });
+      }
+    } catch (error) {
+      print('Error fetching event states: $error');
+    }
+  }
+
   Future<void> toggleEventState(int eventId, String state) async {
     try {
       await ApiService.put('/user/cambio/$state/$eventId', {});
+      if (mounted) {
+        setState(() {
+          eventStates[eventId] = state == 'si';
+        });
+      }
     } catch (error) {
       print('Error toggling event state: $error');
     }
@@ -75,6 +113,63 @@ class EventAdministratorWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildEventButtons(int eventId, String eventName) {
+    final bool isActive = eventStates[eventId] ?? false;
+
+    return Column(
+      children: [
+        Text(
+          'Etapa $eventId ($eventName):',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isActive ? Colors.grey : Colors.lightGreen,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(120, 40),
+              ),
+              onPressed: isActive ? null : () => toggleEventState(eventId, 'si'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(isActive ? Icons.check_circle : Icons.play_arrow),
+                  const SizedBox(width: 8),
+                  Text(isActive ? 'Activo' : 'Empezar'),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: !isActive ? Colors.grey : Colors.red,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(120, 40),
+              ),
+              onPressed: !isActive ? null : () => toggleEventState(eventId, 'no'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(!isActive ? Icons.block : Icons.stop),
+                  const SizedBox(width: 8),
+                  Text(!isActive ? 'Inactivo' : 'Cerrar'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -95,147 +190,22 @@ class EventAdministratorWidget extends StatelessWidget {
       child: Column(
         children: [
           const Text(
-            'Eventos',
+            'Etapas',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Evento 1
-          const Text(
-            'Evento 1:',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightGreen,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(1, 'si'),
-                child: const Text('Empezar'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(1, 'no'),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Evento 2
-          const Text(
-            'Evento 2:',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightGreen,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(2, 'si'),
-                child: const Text('Empezar'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(2, 'no'),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Evento 3
-          const Text(
-            'Evento 3:',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightGreen,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(3, 'si'),
-                child: const Text('Empezar'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(3, 'no'),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Evento 4
-          const Text(
-            'Evento 4:',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightGreen,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(4, 'si'),
-                child: const Text('Empezar'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => toggleEventState(4, 'no'),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
           const SizedBox(height: 24),
 
-          // Botones de Reiniciar y Generar Reporte
+          // Eventos
+          _buildEventButtons(1, 'Traje Típico'),
+          _buildEventButtons(2, 'Traje de Gala'),
+          _buildEventButtons(3, 'Preguntas'),
+          _buildEventButtons(4, 'Público'),
+          const SizedBox(height: 24),
+
+          // Botones de acción
           Column(
             children: [
               SizedBox(

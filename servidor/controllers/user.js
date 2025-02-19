@@ -42,6 +42,7 @@ export const limpiarVotaciones = (req, res) => {
   const sqlLimpiar = [
     "UPDATE votaciones SET vot_estado = 'no';",
     "UPDATE candidata SET cand_nota_final = 0;",
+    "UPDATE candidata SET CAND_CALIFICACIONFINAL = 0;",
     "UPDATE candidata SET id_eleccion = 0;",
     "TRUNCATE TABLE calificacion;",
     "TRUNCATE TABLE finales;",

@@ -219,6 +219,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final user = User.fromJson(data['user']);
+        print("Login Exitoso"); // Mensaje cuando el login es exitoso
         return {
           'user': user,
           'token': data['token'],
