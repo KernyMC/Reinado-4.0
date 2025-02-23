@@ -13,6 +13,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  int _passwordStrength = 0;
+  Color _strengthColor = Colors.grey;
+  
   final Map<String, String> _formData = {
     'email': '',
     'password': '',
@@ -20,23 +25,136 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'lastname': ''
   };
 
+  Widget _buildPasswordStrengthIndicator() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _passwordStrength >= 1 ? Colors.red : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _passwordStrength >= 2 ? Colors.orange : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _passwordStrength >= 3 ? Colors.green : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _passwordStrength == 0 ? '' :
+            _passwordStrength == 1 ? 'Débil' :
+            _passwordStrength == 2 ? 'Medio' : 'Fuerte',
+            style: TextStyle(
+              color: _passwordStrength == 1 ? Colors.red :
+                     _passwordStrength == 2 ? Colors.orange : Colors.green,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _checkPasswordStrength(String password) {
+    setState(() {
+      if (password.isEmpty) {
+        _passwordStrength = 0;
+        _strengthColor = Colors.grey;
+      } else if (password.length < 6) {
+        _passwordStrength = 1; // Débil
+        _strengthColor = Colors.red;
+      } else if (password.length < 10) {
+        _passwordStrength = 2; // Medio
+        _strengthColor = Colors.orange;
+      } else {
+        _passwordStrength = 3; // Fuerte
+        _strengthColor = Colors.green;
+      }
+    });
+  }
+
   void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('¡Éxito!'),
-          content: const Text('Registro completado exitosamente'),
-          actions: [
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacementNamed(context, '/login');
-              },
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Color(0xFF0D4F02),
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Registro Exitoso',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0D4F02),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D4F02),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  child: const Text(
+                                      'Continuar',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -119,12 +237,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 20),
                         TextFormField(
                           controller: _passwordController,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: Icon(Icons.lock),
-                            border: OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            border: const OutlineInputBorder(),
                           ),
-                          obscureText: true,
+                          obscureText: _obscurePassword,
+                          onChanged: _checkPasswordStrength,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor, ingresa una contraseña';
@@ -136,15 +265,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                           onSaved: (value) => _formData['password'] = value ?? '',
                         ),
+                        _buildPasswordStrengthIndicator(),
                         const SizedBox(height: 20),
                         TextFormField(
                           controller: _confirmPasswordController,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Confirmar Contraseña',
-                            prefixIcon: Icon(Icons.lock),
-                            border: OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            border: const OutlineInputBorder(),
                           ),
-                          obscureText: true,
+                          obscureText: _obscureConfirmPassword,
                           validator: (value) {
                             if (value != _passwordController.text) {
                               return 'Las contraseñas no coinciden';

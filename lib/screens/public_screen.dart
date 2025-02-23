@@ -74,7 +74,7 @@ class _PublicScreenState extends State<PublicScreen> {
         backgroundColor: const Color(0xFF0D4F02),
         foregroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
         ),
       ),

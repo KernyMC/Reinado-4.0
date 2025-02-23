@@ -124,12 +124,6 @@ class _CarouselScreenState extends State<CarouselScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: fetchCandidatas,
-          ),
-        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
